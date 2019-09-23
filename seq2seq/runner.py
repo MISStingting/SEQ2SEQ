@@ -4,6 +4,7 @@ from .SeqModel import Seq2SeqForAddress
 from .train_hooks import EvalLoggerHook, TrainLoggerHook
 import os
 import argparse
+import numpy as np
 
 # tf.compat.v1.enable_eager_execution()
 tf.logging.set_verbosity(tf.logging.INFO)
@@ -104,11 +105,9 @@ class Runner(object):
         # checkpoint_path = tf.train.latest_checkpoint(checkpoint_dir=self._config["model_dir"])
         predictions = self.estimator.predict(input_fn=predict_input_fn, hooks=[])
         for i, e in enumerate(predictions):
-            actions = []
-            for each in e["predict_ids"]:
-                if each != 0:
-                    actions.append(each)
-            lables = e["predict_labels"][:len(actions)]
+            ids = np.trim_zeros(e["predict_ids"])
+            lables = e["predict_labels"][:ids.shape[0]]
+            print("ids:   ", ids)
             print("labels:", [e.decode() for e in lables])
             print("\n")
 

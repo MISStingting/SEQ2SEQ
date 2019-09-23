@@ -7,10 +7,6 @@ pip install tensorflow==1.13.1
 
 如果需要使用低版本，例如1.10.0 不支持 tf.compat.v1
 
-  [b'\xe8\x8f\x8a', b'\xe5\xb4\x87', b'\xe5\xbb\x89',
-        b'\xef\xbc\x8c', b'\xe5\x85\xb0', b'\xe6\x80\x9d',
-        b'\xe6\xb4\x81', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0',
-        b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0', b'0'],
         
 # tf.sequence_mask([1, 3, 2], 5)  # [[True, False, False, False, False],
 #                                  #  [True, True, True, False, False],
@@ -19,16 +15,16 @@ pip install tensorflow==1.13.1
 t2 = [[[7, 4], [8, 4]], [[2, 10], [15, 11]]]
 c =tf.concat([t1, t2], -1)`
 `# c
-# <tf.Tensor: id=28, shape=(2, 2, 4), dtype=int32, numpy=
+`# <tf.Tensor: id=28, shape=(2, 2, 4), dtype=int32, numpy=
 # array([[[ 1,  2,  7,  4],
 #         [ 2,  3,  8,  4]],
 #        [[ 4,  4,  2, 10],
-#         [ 5,  3, 15, 11]]])>   `  
+#         [ 5,  3, 15, 11]]])>   ``  
 
 
-final_sequence_lengths: [12  9 19  7 10  6  7  7  5 11  7  7 22  7  7 11]
+`final_sequence_lengths: [12  9 19  7 10  6  7  7  5 11  7  7 22  7  7 11]
 in_seq_len: [12  9 19  7 10  6  7  7  5 11  7  7 22  7  7 11]
-out_seq_len:[17 12 25  7  7 12  4  7  7 12 12  7 25  9  7 10]   
+out_seq_len:[17 12 25  7  7 12  4  7  7 12 12  7 25  9  7 10]   `
 
 
 

@@ -24,7 +24,7 @@ class Runner(object):
             allow_soft_placement=True,
             log_device_placement=False,
             gpu_options=tf.compat.v1.GPUOptions(
-                allow_growth=False
+                allow_growth=True
             )
         )
         run_config = tf.estimator.RunConfig(model_dir=self._config["model_dir"],

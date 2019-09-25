@@ -1,7 +1,7 @@
 import tensorflow as tf
 import yaml
 from .SeqModel import Seq2SeqForAddress
-from .train_hooks import EvalLoggerHook, TrainLoggerHook
+from .hooks import EvalLoggerHook, InitHook, SaveEvaluationPredictionsHook, CountParamsHook
 import os
 import argparse
 import numpy as np
@@ -47,7 +47,7 @@ class Runner(object):
 
     def train(self):
         input_fn = lambda: self.model.input_fn(params=self._config, mode=tf.estimator.ModeKeys.TRAIN)
-        train_hooks = [TrainLoggerHook()]
+        train_hooks = [InitHook(), CountParamsHook()]
         train_spec = tf.estimator.TrainSpec(
             input_fn=input_fn,
             hooks=train_hooks,
@@ -58,7 +58,8 @@ class Runner(object):
 
     def eval(self):
         input_fn = lambda: self.model.input_fn(params=self._config, mode=tf.estimator.ModeKeys.EVAL)
-        eval_spec = tf.estimator.EvalSpec(input_fn=input_fn, steps=self._config["eval_steps"], hooks=[EvalLoggerHook()])
+        eval_spec = tf.estimator.EvalSpec(input_fn=input_fn, steps=self._config["eval_steps"],
+                                          hooks=[])
         return self.estimator.evaluate(input_fn=eval_spec.input_fn,
                                        steps=eval_spec.steps,
                                        hooks=eval_spec.hooks,
@@ -68,8 +69,8 @@ class Runner(object):
         train_input_fn = lambda: self.model.input_fn(params=self._config, mode=tf.estimator.ModeKeys.TRAIN)
         eval_input_fn = lambda: self.model.input_fn(params=self._config, mode=tf.estimator.ModeKeys.EVAL)
         train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=self._config["max_steps"],
-                                            hooks=[])
-        eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, hooks=[EvalLoggerHook()],
+                                            hooks=[InitHook(), CountParamsHook()])
+        eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn, hooks=[InitHook()],
                                           steps=self._config["eval_steps"])
         return tf.estimator.train_and_evaluate(estimator=self.estimator,
                                                train_spec=train_spec,
@@ -103,13 +104,24 @@ class Runner(object):
         # 推断模型效果
         predict_input_fn = lambda: self.model.input_fn(params=self._config, mode=tf.estimator.ModeKeys.PREDICT)
         # checkpoint_path = tf.train.latest_checkpoint(checkpoint_dir=self._config["model_dir"])
-        predictions = self.estimator.predict(input_fn=predict_input_fn, hooks=[])
+        predictions = self.estimator.predict(input_fn=predict_input_fn, hooks=self._build_predict_hooks())
         for i, e in enumerate(predictions):
-            ids = np.trim_zeros(e["predict_ids"])
-            lables = e["predict_labels"][:ids.shape[0]]
-            print("ids:   ", ids)
-            print("labels:", [e.decode() for e in lables])
+            actions = []
+            for ele in e["predict_labels"]:
+                actions.append(ele.decode("utf8"))
+            index = actions.index("<blank>")
+            print("labels:", actions[:index])
+            print(e["predict_ids"])
             print("\n")
+
+    def _build_predict_hooks(self):
+        hooks = [InitHook()]
+        save_path = os.path.join(self.estimator.model_dir, "eval")
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        output_file = os.path.join(save_path, "predictions.txt")
+        hooks.append(SaveEvaluationPredictionsHook(output_file=output_file))
+        return hooks
 
 
 if __name__ == "__main__":

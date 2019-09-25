@@ -3,7 +3,7 @@ import tensorflow as tf
 import yaml
 import os
 
-# tf.compat.v1.enable_eager_execution()
+# tf.enable_eager_execution()
 cur_dir = os.path.dirname(__file__)
 
 
@@ -28,50 +28,68 @@ class Dataset(object):
             dataset = features_dataset.map(lambda x: tf.string_split([x]).values)
             dataset = dataset.shuffle(buffer_size=params["buffer_size"],
                                       reshuffle_each_iteration=params["reshuffle_each_iteration"])
-            dataset = dataset.padded_batch(batch_size=params["batch_size"], padded_shapes=(tf.TensorShape([None])),
-                                           padding_values=(tf.constant("<PAD>", dtype=tf.string)))
+            dataset = dataset.prefetch(buffer_size=params["buffer_size"])
+            dataset = dataset.map(lambda src: (src, tf.size(src)))
+            dataset = dataset.padded_batch(batch_size=params["batch_size"],
+                                           padded_shapes=(tf.TensorShape([None]), tf.TensorShape([])),
+                                           padding_values=(tf.constant("</s>"), 0))
             iterator = dataset.make_one_shot_iterator()
-            batch_features = iterator.get_next()
-            input_length = tf.map_fn(
-                fn=lambda x: tf.shape(tf.string_split(x, sep="<PAD>").values)[0],
-                elems=batch_features,
-                dtype=tf.int32)
+            src, src_len = iterator.get_next()
             features = {
-                "input": batch_features,
-                "input_length": input_length
+                "input": src,
+                "input_length": src_len
             }
             labels = None
-            # print("input_len:", input_length)
-            # print("input：", batch_features)
+            # print("input:", src)
+            # print("input_len：", src_len)
         else:
             dataset = tf.data.Dataset.zip((features_dataset, labels_dataset))
             dataset = dataset.map(lambda x, y: (tf.string_split([x]).values, tf.string_split([y]).values))
             dataset = dataset.repeat(params["repeat"]).shuffle(buffer_size=params["buffer_size"],
                                                                reshuffle_each_iteration=params[
                                                                    "reshuffle_each_iteration"])
+            dataset = dataset.prefetch(buffer_size=params["buffer_size"])
+            if params["src_max_len"] > 0:
+                dataset = dataset.map(
+                    lambda src, tgt: (src[:params["src_max_len"]], tgt))
+            if params["tgt_max_len"] > 0:
+                dataset = dataset.map(
+                    lambda src, tgt: (src, tgt[:params["tgt_max_len"]]))
+            dataset = dataset.map(
+                lambda src, tgt: (src,
+                                  tf.concat((["<s>"], tgt), 0),
+                                  tf.concat((tgt, ["</s>"]), 0)),
+                num_parallel_calls=params["num_parallel_calls"])
+            dataset = dataset.map(lambda src, tgt_in, tgt_out: (src, tgt_in, tgt_out, tf.size(src), tf.size(tgt_out)))
             dataset = dataset.padded_batch(batch_size=params["batch_size"],
-                                           padded_shapes=(tf.TensorShape([None]), tf.TensorShape([None])),
+                                           padded_shapes=(
+                                               tf.TensorShape([None]),
+                                               tf.TensorShape([None]),
+                                               tf.TensorShape([None]),
+                                               tf.TensorShape([]),
+                                               tf.TensorShape([])),
                                            padding_values=(
-                                               tf.constant("<PAD>", dtype=tf.string),
-                                               tf.constant("<UNK>", dtype=tf.string)))
-            iterator = tf.compat.v1.data.make_one_shot_iterator(dataset)
-            batch_features, batch_labels = iterator.get_next()
-            input_length = tf.map_fn(fn=lambda x: tf.shape(tf.string_split(x, delimiter="<PAD>").values)[0],
-                                     elems=batch_features, dtype=tf.int32)
-            output_length = tf.map_fn(fn=lambda y: tf.shape(tf.string_split(y, delimiter="<UNK>").values)[0],
-                                      elems=batch_labels, dtype=tf.int32)
+                                               tf.constant("</s>", dtype=tf.string),
+                                               tf.constant("<s>", dtype=tf.string),
+                                               tf.constant("</s>", dtype=tf.string),
+                                               0,
+                                               0))
+            iterator = dataset.make_one_shot_iterator()
+            src, tgt_in, tgt_out, input_length, output_length = iterator.get_next()
             features = {
-                "input": batch_features,
+                "input": src,
                 "input_length": input_length
             }
             labels = {
-                "output": batch_labels,
+                "output_in": tgt_in,
+                "output_out": tgt_out,
                 "output_length": output_length
             }
             # print("input_len:", input_length)
             # print("output_len:", output_length)
-            # print("input：", batch_features)
-            # print("output:", batch_labels)
+            # print("input：", src)
+            # print("output:", tgt_in)
+            # print("output2:", tgt_out)
 
         return features, labels
 
@@ -97,4 +115,4 @@ if __name__ == '__main__':
     config_file = os.path.join(cur_dir, "config.yml")
     f = open(config_file, 'rt', encoding="utf8", buffering=8142)
     params = yaml.load(stream=f.read(), Loader=yaml.FullLoader)
-    data_util.get_dataset(params, mode=tf.estimator.ModeKeys.EVAL)
+    data_util.get_dataset(params, mode=tf.estimator.ModeKeys.PREDICT)

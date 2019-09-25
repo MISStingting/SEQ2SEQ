@@ -1,9 +1,7 @@
 """Standalone script to generate word vocabularies from monolingual corpus."""
 
 import argparse
-
-from opennmt import tokenizers
-from seq2seq.vocab import Vocab
+from SEQ2SEQ.seq2seq.vocab import Vocab
 
 """Define constant values used thoughout the project."""
 
@@ -44,8 +42,8 @@ class BuildVocabs(object):
 
 
 def main_2():
-    from_vocab = r"E:\LTTProject\SEQ2SEQ\data\source_vocab"
-    save_vocab = r"E:\LTTProject\SEQ2SEQ\data\target_vocab"
+    from_vocab = r"E:\LTTProject\data\source_vocab"
+    save_vocab = r"E:\LTTProject\data\target_vocab"
     size = 0
 
     builder = BuildVocabs(data=[], from_vocab=from_vocab,
@@ -70,7 +68,6 @@ def main():
                               "(+ 1 represents the <unk> token that will be added during the training."))
     parser.add_argument("--without_sequence_tokens", default=False, action="store_true",
                         help="If set, do not add special sequence tokens (start, end) in the vocabulary.")
-    tokenizers.add_command_line_arguments(parser)
 
     args = parser.parse_args()
 

@@ -29,7 +29,6 @@ class ServingClient(object):
         result = future.result()
         # sync requests
         # result_future = stub.Predict(request, 30.)
-
         # For async requests
         # result_future = stub.Predict.future(request, 10.)
         # Do some work...
@@ -41,9 +40,9 @@ class ServingClient(object):
 
 
 if __name__ == '__main__':
-    ocr = r"E:\LTTProject\SEQ2SEQ\data\test.ocr"
-    std = r"E:\LTTProject\SEQ2SEQ\data\test.std"
-    serve_client = ServingClient(model_name="seq2seq", host="your host", port=8090, timeout=30)
+    ocr = r"E:\LTTProject\SEQ2SEQ\data\dev.ocr"
+    std = r"E:\LTTProject\SEQ2SEQ\data\dev.std"
+    serve_client = ServingClient(model_name="seqAddress", host="10.100.3.200", port=8090, timeout=30)
 
     with open(file=ocr, mode="rt", encoding="utf8", buffering=8192) as f, \
             open(file=std, mode="rt", encoding="utf8", buffering=8192) as fin:

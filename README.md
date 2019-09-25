@@ -45,9 +45,11 @@ Dataset
 You will need some data to run this program, 
 the dataset can be downloaded from [this project](https://github.com/wb14123/couplet-dataset).
 
-** Note: If you are using your own dataset, you need to add `<s>` and `<\s>` as the first two line into the vocabs file. **
+** Note: If you are using your own dataset, you need to add '<blank>'and'`<s>` and `<\s>` as the first three line into the vocabs file. **
 
-Usage
+<blank>
+<s>
+</s>
 ------------
 
 ### Train

@@ -78,3 +78,5 @@ Result
 -------------
 取训练数据70万训练
 
+`_tensorflow.python.framework.errors_impl.InvalidArgumentError: indices[1,5] = 3417 is not in [0, 3063)
+	 [[{{node embedding/embed_target}}]]_` : 词典数目统计错了
